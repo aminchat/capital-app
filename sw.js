@@ -1,4 +1,4 @@
-const CACHE = 'capital-app-v1';
+const CACHE = 'capital-app-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,21 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+
+  // For page navigations: always try network first so updates appear,
+  // fall back to cache only when offline.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put('./index.html', copy));
+        return resp;
+      }).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // For other assets: cache-first.
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
@@ -34,3 +49,4 @@ self.addEventListener('fetch', (e) => {
     })
   );
 });
+
