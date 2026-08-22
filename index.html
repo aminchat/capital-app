@@ -1280,6 +1280,19 @@ if(typeof google!=='undefined'){
   setTimeout(function(){clearInterval(_gt);},12000);
 }
 
+/* همگام‌سازی دوباره هنگام بازگشت به برنامه یا تغییر تب */
+let syncPullBusy=false;
+function refreshFromDrive(){
+  if(syncPullBusy||!gUser)return;
+  syncPullBusy=true;
+  const done=function(){syncPullBusy=false;render();};
+  if(gToken)loadFromDrive(done);
+  else requestAccessToken(function(ok){if(ok)loadFromDrive(done);else syncPullBusy=false;});
+}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refreshFromDrive();});
+window.addEventListener('focus',refreshFromDrive);
+setInterval(function(){if(document.visibilityState==='visible')refreshFromDrive();},60000);
+
 /* service worker (PWA) */
 if('serviceWorker' in navigator && store.persisted){
   navigator.serviceWorker.register('sw.js').then(reg=>{
@@ -1297,5 +1310,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f41b9398d6f53a',t:'MTc4NzQyNTA5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
