@@ -1,4 +1,4 @@
-const CACHE = 'capital-app-v2';
+const CACHE = 'capital-app-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -49,4 +49,3 @@ self.addEventListener('fetch', (e) => {
     })
   );
 });
-
