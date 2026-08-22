@@ -647,20 +647,38 @@ function savePrice(id){
 
 /* ============================= BUDGET FORM ============================= */
 function openBudgetForm(mk){
+  mk=mk||curMonthKey();
   const b=state.budgets[mk];
+  const [sy,sm]=mk.split('/').map(Number);
+  const cur=jalaliNow();
+  const years=[];
+  for(let y=cur[0]-2;y<=cur[0]+2;y++)years.push(y);
+  const monthOpts=MONTHS.map((name,i)=>`<option value="${i+1}" ${(i+1)===sm?'selected':''}>${name}</option>`).join('');
+  const yearOpts=years.map(y=>`<option value="${y}" ${y===sy?'selected':''}>${toFa(y)}</option>`).join('');
   openModal(`
     <button class="x" onclick="closeModal()">✕</button>
-    <h2>بودجه ${monthLabel(mk)}</h2>
-    <p class="muted small" style="margin-top:-6px">سقف خرج این ماه را مشخص کن (تومان).</p>
-    <div class="field"><label>مبلغ بودجه</label>
+    <h2>${b?'ویرایش بودجه':'ثبت بودجه'}</h2>
+    <p class="muted small" style="margin-top:-6px">ماه موردنظر را انتخاب کن (مقدار پیش‌فرض، ماه فعلی است).</p>
+    <div class="row">
+      <div class="col field"><label>ماه</label>
+        <select class="input" id="bMonth">${monthOpts}</select>
+      </div>
+      <div class="col field"><label>سال</label>
+        <select class="input" id="bYear">${yearOpts}</select>
+      </div>
+    </div>
+    <div class="field"><label>مبلغ بودجه (تومان)</label>
       <input class="input" id="bAmount" type="number" inputmode="decimal" min="0" placeholder="مثلاً ۱۵۰۰۰۰۰۰" value="${b?b.amount:''}">
     </div>
-    <button class="btn primary block" onclick="saveBudget('${mk}')">ذخیره بودجه</button>
+    <button class="btn primary block" onclick="saveBudget()">${b?'ذخیره تغییرات':'ذخیره بودجه'}</button>
   `);
 }
-function saveBudget(mk){
+function saveBudget(){
   const amount=parseFloat(document.getElementById('bAmount').value);
   if(!amount||amount<=0){toast('مبلغ بودجه را وارد کن');return;}
+  const m=parseInt(document.getElementById('bMonth').value,10);
+  const y=parseInt(document.getElementById('bYear').value,10);
+  const mk=y+'/'+String(m).padStart(2,'0');
   state.budgets[mk]={amount};
   save();closeModal();render();toast('بودجه ذخیره شد ✓');
 }
