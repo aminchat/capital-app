@@ -1118,9 +1118,10 @@ function driveFetch(url,opts){
 function driveFindFile(){
   const q="name='"+DRIVE_FILENAME+"' and trashed=false";
   return driveFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&spaces=drive&fields=files(id,name)')
-    .then(function(r){return r.json();}).then(function(d){return (d.files&&d.files[0])||null;});
+    .then(function(r){if(!r.ok)throw new Error('Drive list '+r.status);return r.json();})
+    .then(function(d){return (d.files&&d.files[0])||null;});
 }
-function driveRead(id){return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media').then(function(r){return r.text();});}
+function driveRead(id){return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media').then(function(r){if(!r.ok)throw new Error('Drive read '+r.status);return r.text();});}
 function driveCreate(content){
   const fd=new FormData();
   fd.append('metadata',new Blob([JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'}));
@@ -1144,8 +1145,7 @@ function loadFromDrive(cb){
   if(!gToken){requestAccessToken(function(ok){if(ok)loadFromDrive(cb);else{toast('مجوز Google Drive داده نشد');cb();}});return;}
   driveFindFile().then(function(f){
     if(!f){
-      driveCreate(JSON.stringify(state)).catch(function(){});
-      cb();return;
+      return driveCreate(JSON.stringify(state)).then(function(){toast('اطلاعات در Google Drive ذخیره شد ✓');cb();});
     }
     return driveRead(f.id).then(function(text){
       try{
@@ -1196,8 +1196,10 @@ function initGoogleOnLoad(){
   const u=store.get('g_user');
   if(u){try{gUser=JSON.parse(u);}catch(e){}}
   google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleCredential});
-  // گرفتن توکن در زمان بازشدن صفحه ممکن است هر بار پنجره گوگل را باز کند؛
-  // توکن فقط با اقدام کاربر (ورود یا ذخیره فوری) درخواست می‌شود.
+  // تمدید بی‌صدای توکن؛ اگر قبلاً مجوز داده شده باشد بدون پنجره انجام می‌شود.
+  if(store.get('g_signed')==='1'){
+    requestAccessToken(function(ok){if(ok)loadFromDrive(function(){render();});});
+  }
   render();
 }
 
