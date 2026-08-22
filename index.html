@@ -1138,7 +1138,7 @@ function hasRemoteData(r){
 
 function loadFromDrive(cb){
   cb=cb||function(){};
-  if(!gToken){cb();return;}
+  if(!gToken){requestAccessToken(function(ok){if(ok)loadFromDrive(cb);else{toast('مجوز Google Drive داده نشد');cb();}});return;}
   driveFindFile().then(function(f){
     if(!f){
       driveCreate(JSON.stringify(state)).catch(function(){});
@@ -1166,7 +1166,7 @@ function scheduleSync(){
   syncTimer=setTimeout(pushToDrive,1500);
 }
 function pushToDrive(){
-  if(!gToken)return;
+  if(!gToken){requestAccessToken(function(ok){if(ok)pushToDrive();else toast('مجوز Google Drive داده نشد');});return;}
   const content=JSON.stringify(state);
   driveFindFile().then(function(f){
     if(f)return driveUpdate(f.id,content);
