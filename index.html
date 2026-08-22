@@ -1003,21 +1003,32 @@ function openTransferForm(){
     <h2>⇄ انتقال بین حساب‌ها</h2>
     <div class="hint" style="margin-bottom:12px">این انتقال هزینه یا درآمد نیست و در گزارش‌ها حساب نمی‌شود.</div>
     <div class="field"><label>از حساب</label><select class="input" id="trFrom">${opts}</select></div>
-    <div class="field"><label>به حساب</label><select class="input" id="trTo">${opts}</select></div>
-    <div class="field"><label>مبلغ انتقال</label><input class="input" id="trAmount" type="number" inputmode="decimal" min="0" placeholder="مثلاً ۱۰۰۰۰۰۰"></div>
+    <div class="field"><label>به حساب</label><select class="input" id="trTo" onchange="updateTransferPreview()">${opts}</select></div>
+    <div class="field"><label>مبلغ از حساب مبدأ</label><input class="input" id="trAmount" type="number" inputmode="decimal" min="0" placeholder="مبلغ به واحد حساب مبدأ" oninput="updateTransferPreview()"></div>
+    <div id="trPreview" class="hint" style="margin-bottom:12px">مبلغ حساب مقصد بعد از تبدیل اینجا نمایش داده می‌شود.</div>
     <div class="field"><label>توضیح (اختیاری)</label><input class="input" id="trNote" class="input" placeholder="مثلاً انتقال به کارت خرید"></div>
     <div class="field"><label>تاریخ</label><input class="input" id="trDate" type="date" value="${todayISO}"></div>
     <button class="btn primary block" onclick="saveTransfer()">ثبت انتقال</button>`);
+}
+function updateTransferPreview(){
+  const from=accountById(document.getElementById('trFrom').value), to=accountById(document.getElementById('trTo').value);
+  const amount=parseFloat(document.getElementById('trAmount').value)||0, box=document.getElementById('trPreview');
+  if(!from||!to||!amount){box.textContent='مبلغ حساب مقصد بعد از تبدیل اینجا نمایش داده می‌شود.';return;}
+  const toman=amount*rateOf(from.currency), dest=toman/rateOf(to.currency);
+  box.innerHTML=`ارزش انتقال: <b>${fmt(toman)} تومان</b><br>واریز به مقصد: <b>${fmt(dest)} ${esc(to.currency)}</b>${from.currency!=='تومان'||to.currency!=='تومان'?`<br><span class="small muted">نرخ ${esc(from.currency)}: ${fmt(rateOf(from.currency))} تومان · نرخ ${esc(to.currency)}: ${fmt(rateOf(to.currency))} تومان</span>`:''}`;
 }
 function saveTransfer(){
   const from=document.getElementById('trFrom').value, to=document.getElementById('trTo').value;
   const amount=parseFloat(document.getElementById('trAmount').value);
   if(from===to){toast('حساب مبدأ و مقصد باید متفاوت باشند');return;}
   if(!amount||amount<=0){toast('مبلغ معتبر وارد کن');return;}
+  const fromAcct=accountById(from), toAcct=accountById(to), fromRate=rateOf(fromAcct.currency), toRate=rateOf(toAcct.currency);
+  if(!fromRate||!toRate){toast('نرخ ارز مبدأ یا مقصد را در بخش حساب‌ها ثبت کن');return;}
+  const destinationAmount=amount*fromRate/toRate;
   const dateISO=document.getElementById('trDate').value||new Date().toISOString().slice(0,10), month=monthOfISO(dateISO), pair=uid();
   const note=document.getElementById('trNote').value.trim();
   state.transactions.push({id:uid(),pair,amount,accountId:from,note,dateISO,month,type:'transferOut',cat:null});
-  state.transactions.push({id:uid(),pair,amount,accountId:to,note:note||'انتقال بین حساب‌ها',dateISO,month,type:'transferIn',cat:null});
+  state.transactions.push({id:uid(),pair,amount:destinationAmount,accountId:to,note:note||'انتقال بین حساب‌ها',dateISO,month,type:'transferIn',cat:null});
   save();closeModal();render();toast('انتقال با موفقیت ثبت شد ✓');
 }
 function saveRateFrom(cur){
@@ -1278,5 +1289,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f329f77806356a',t:'MTc4NzQxNTE5Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
