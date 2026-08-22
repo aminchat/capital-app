@@ -1122,8 +1122,11 @@ function driveFindFile(){
 }
 function driveRead(id){return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media').then(function(r){return r.text();});}
 function driveCreate(content){
-  return driveFetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})})
-    .then(function(r){return r.json();}).then(function(d){return driveUpdate(d.id,content);});
+  const fd=new FormData();
+  fd.append('metadata',new Blob([JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'}));
+  fd.append('file',new Blob([content],{type:'application/json'}));
+  return driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',body:fd})
+    .then(function(r){if(!r.ok)throw new Error('Drive create '+r.status);return r.json();});
 }
 function driveUpdate(id,content){
   return driveFetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:content}).then(function(r){if(!r.ok)throw new Error('Drive upload '+r.status);return r;});
@@ -1288,5 +1291,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f373a0dab69327',t:'MTc4NzQxODIxNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
