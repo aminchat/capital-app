@@ -1061,10 +1061,10 @@ function handleCredential(resp){
   requestAccessToken(function(ok){
     if(!ok){toast('نتوانستم به درایو دسترسی بگیرم');render();return;}
     loadFromDrive(function(){render();toast('ورود موفق ✓ همگام‌سازی فعال شد');});
-  });
+  },true);
 }
 
-function requestAccessToken(cb){
+function requestAccessToken(cb,interactive){
   const done=function(ok){if(cb)cb(ok);};
   if(typeof google==='undefined'||!google.accounts){done(false);return;}
   if(!tokenClient){
@@ -1079,7 +1079,7 @@ function requestAccessToken(cb){
     });
   }
   if(gToken&&gToken.exp>Date.now()+60000){done(true);return;}
-  tokenClient.requestAccessToken({prompt:'none'});
+  tokenClient.requestAccessToken({prompt:interactive?'':'none'});
 }
 
 function googleSignIn(){
