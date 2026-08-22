@@ -1097,7 +1097,7 @@ function googleSignIn(){
 }
 function openProfileMenu(){
   if(!gUser)return;
-  openModal('<button class="x" onclick="closeModal()">✕</button><h2>حساب کاربری</h2><div class="hint" style="margin:14px 0">'+esc(gUser.name)+'<br><span class="small muted">'+esc(gUser.email)+'</span></div><button class="btn danger block" onclick="closeModal();googleSignOut()">خروج از حساب گوگل</button>');
+  openModal('<button class="x" onclick="closeModal()">✕</button><h2>حساب کاربری</h2><div class="hint" style="margin:14px 0">'+esc(gUser.name)+'<br><span class="small muted">'+esc(gUser.email)+'</span></div><button class="btn primary block" onclick="closeModal();loadFromDrive(function(){render();toast(\'دریافت از گوگل انجام شد ✓\');},true)">دریافت آخرین اطلاعات از گوگل</button><button class="btn danger block" style="margin-top:8px" onclick="closeModal();googleSignOut()">خروج از حساب گوگل</button>');
 }
 function googleSignOut(){
   clearSignedIn();
@@ -1156,9 +1156,9 @@ function hasRemoteData(r){
   return (r.accounts&&r.accounts.length)||(r.transactions&&r.transactions.length)||(r.investments&&r.investments.length)||Object.keys(r.budgets||{}).length;
 }
 
-function loadFromDrive(cb){
+function loadFromDrive(cb,interactive){
   cb=cb||function(){};
-  if(!gToken){requestAccessToken(function(ok){if(ok)loadFromDrive(cb);else{toast('مجوز Google Drive داده نشد');cb();}});return;}
+  if(!gToken){requestAccessToken(function(ok){if(ok)loadFromDrive(cb,interactive);else{toast('مجوز Google Drive داده نشد');cb();}},!!interactive);return;}
   driveFindFile().then(function(f){
     if(!f){
       return driveCreate(JSON.stringify(state)).then(function(){toast('اطلاعات در Google Drive ذخیره شد ✓');cb();});
@@ -1315,5 +1315,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f4453b093ae1fb',t:'MTc4NzQyNjc5OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
