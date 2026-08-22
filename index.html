@@ -1042,6 +1042,7 @@ const GOOGLE_CLIENT_ID='802769209005-v1jiuetctp8u8lr5su697fafdqhe80oc.apps.googl
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILENAME='capital-app-data.json';
 const DRIVE_FILE_KEY='capital_app_drive_file_id';
+const APP_VERSION='1.0.8';
 let gUser=null;
 let gToken=null;
 let tokenClient=null;
@@ -1093,6 +1094,10 @@ function googleSignIn(){
   }
   const b=window._gbtn.querySelector('div[role=button]');
   if(b)b.click();
+}
+function openProfileMenu(){
+  if(!gUser)return;
+  openModal('<button class="x" onclick="closeModal()">✕</button><h2>حساب کاربری</h2><div class="hint" style="margin:14px 0">'+esc(gUser.name)+'<br><span class="small muted">'+esc(gUser.email)+'</span></div><button class="btn danger block" onclick="closeModal();googleSignOut()">خروج از حساب گوگل</button>');
 }
 function googleSignOut(){
   clearSignedIn();
@@ -1193,9 +1198,9 @@ function renderSyncCard(){
     const avatar=gUser.picture
       ? '<img src="'+esc(gUser.picture)+'" style="width:30px;height:30px;border-radius:50%;object-fit:cover" alt="">'
       : '<div style="width:30px;height:30px;border-radius:50%;background:rgba(61,139,253,.18);display:flex;align-items:center;justify-content:center">👤</div>';
-    return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:0 0 12px;color:var(--muted);font-size:11px;direction:rtl">'
+    return '<button onclick="openProfileMenu()" title="حساب کاربری" style="display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:0 0 12px;padding:3px 7px;background:transparent;color:var(--muted);font:inherit;font-size:11px;direction:rtl;text-align:right">'
       +avatar+'<div><div style="color:var(--text);font-size:12px;font-weight:600">'+esc(gUser.name)+'</div>'
-      +'<div style="color:var(--green);font-size:10px">همگام‌سازی خودکار فعال ✓</div></div></div>';
+      +'<div style="color:var(--green);font-size:10px">همگام‌سازی خودکار فعال ✓ · نسخه '+APP_VERSION+'</div></div></button>';
   }
   return '<div class="card"><h3>☁️ همگام‌سازی ابری</h3>'
     +'<div class="small muted" style="margin-bottom:12px">با حساب گوگل وارد شو تا داده‌هایت خودکار در Google Drive ذخیره شود و از هر دستگاهی در دسترس باشد.</div>'
