@@ -1041,6 +1041,7 @@ function saveRateFrom(cur){
 const GOOGLE_CLIENT_ID='802769209005-v1jiuetctp8u8lr5su697fafdqhe80oc.apps.googleusercontent.com';
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILENAME='capital-app-data.json';
+const DRIVE_FILE_KEY='capital_app_drive_file_id';
 let gUser=null;
 let gToken=null;
 let tokenClient=null;
@@ -1116,10 +1117,19 @@ function driveFetch(url,opts){
   });
 }
 function driveFindFile(){
+  const savedId=store.get(DRIVE_FILE_KEY);
+  if(savedId){
+    return driveFetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(savedId)+'?fields=id,name,trashed')
+      .then(function(r){if(r.ok)return r.json();store.set(DRIVE_FILE_KEY,'');return null;})
+      .then(function(f){if(f&&!f.trashed)return f;return driveFindFileByName();});
+  }
+  return driveFindFileByName();
+}
+function driveFindFileByName(){
   const q="name='"+DRIVE_FILENAME+"' and trashed=false";
-  return driveFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&spaces=drive&fields=files(id,name)')
+  return driveFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&spaces=drive&corpora=user&pageSize=100&fields=files(id,name)')
     .then(function(r){if(!r.ok)throw new Error('Drive list '+r.status);return r.json();})
-    .then(function(d){return (d.files&&d.files[0])||null;});
+    .then(function(d){const f=(d.files&&d.files[0])||null;if(f)store.set(DRIVE_FILE_KEY,f.id);return f;});
 }
 function driveRead(id){return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media').then(function(r){if(!r.ok)throw new Error('Drive read '+r.status);return r.text();});}
 function driveCreate(content){
@@ -1127,7 +1137,8 @@ function driveCreate(content){
   fd.append('metadata',new Blob([JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'}));
   fd.append('file',new Blob([content],{type:'application/json'}));
   return driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',body:fd})
-    .then(function(r){if(!r.ok)throw new Error('Drive create '+r.status);return r.json();});
+    .then(function(r){if(!r.ok)throw new Error('Drive create '+r.status);return r.json();})
+    .then(function(d){if(d.id)store.set(DRIVE_FILE_KEY,d.id);return d;});
 }
 function driveUpdate(id,content){
   return driveFetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:content}).then(function(r){if(!r.ok)throw new Error('Drive upload '+r.status);return r;});
@@ -1286,5 +1297,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f41b9398d6f53a',t:'MTc4NzQyNTA5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
