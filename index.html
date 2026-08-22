@@ -1126,7 +1126,7 @@ function driveCreate(content){
     .then(function(r){return r.json();}).then(function(d){return driveUpdate(d.id,content);});
 }
 function driveUpdate(id,content){
-  return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:content});
+  return driveFetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:content}).then(function(r){if(!r.ok)throw new Error('Drive upload '+r.status);return r;});
 }
 
 function hasLocalData(){
@@ -1171,7 +1171,7 @@ function pushToDrive(){
   driveFindFile().then(function(f){
     if(f)return driveUpdate(f.id,content);
     return driveCreate(content);
-  }).then(function(){/* synced */}).catch(function(){});
+  }).then(function(){toast('در Google Drive ذخیره شد ✓');}).catch(function(){toast('ذخیره در Google Drive ناموفق بود');});
 }
 
 function renderSyncCard(){
@@ -1288,5 +1288,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f373a0dab69327',t:'MTc4NzQxODIxNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
