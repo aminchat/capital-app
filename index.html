@@ -1180,18 +1180,11 @@ function pushToDrive(){
 function renderSyncCard(){
   if(gUser){
     const avatar=gUser.picture
-      ? '<img src="'+esc(gUser.picture)+'" style="width:40px;height:40px;border-radius:50%" alt="">'
-      : '<div class="ic" style="background:rgba(61,139,253,.15)">👤</div>';
-    return '<div class="card">'
-      +'<div class="row" style="align-items:center">'+avatar
-      +'<div style="flex:1"><div class="t1" style="font-size:14px">'+esc(gUser.name)+'</div>'
-      +'<div class="t2">'+esc(gUser.email)+'</div></div>'
-      +'<span class="badge" style="color:var(--green);border-color:rgba(34,197,94,.4)">همگام‌سازی فعال ✓</span></div>'
-      +'<div class="row" style="margin-top:10px">'
-      +'<button class="btn sm primary" onclick="pushToDrive()">💾 ذخیره فوری</button>'
-      +'<button class="btn sm" onclick="loadFromDrive()">⬇️ دریافت از درایو</button>'
-      +'<button class="btn sm danger" onclick="googleSignOut()">خروج</button>'
-      +'</div></div>';
+      ? '<img src="'+esc(gUser.picture)+'" style="width:30px;height:30px;border-radius:50%;object-fit:cover" alt="">'
+      : '<div style="width:30px;height:30px;border-radius:50%;background:rgba(61,139,253,.18);display:flex;align-items:center;justify-content:center">👤</div>';
+    return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:0 0 12px;color:var(--muted);font-size:11px;direction:rtl">'
+      +avatar+'<div><div style="color:var(--text);font-size:12px;font-weight:600">'+esc(gUser.name)+'</div>'
+      +'<div style="color:var(--green);font-size:10px">همگام‌سازی خودکار فعال ✓</div></div></div>';
   }
   return '<div class="card"><h3>☁️ همگام‌سازی ابری</h3>'
     +'<div class="small muted" style="margin-bottom:12px">با حساب گوگل وارد شو تا داده‌هایت خودکار در Google Drive ذخیره شود و از هر دستگاهی در دسترس باشد.</div>'
