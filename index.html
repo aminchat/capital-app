@@ -373,6 +373,7 @@ function investProfit(inv){return investValue(inv)-((inv.qty||0)*(inv.buy||0));}
 
 function spentIn(mk){return state.transactions.filter(t=>t.month===mk&&t.type==='out').reduce((s,t)=>s+t.amount,0);}
 function incomeIn(mk){return state.transactions.filter(t=>t.month===mk&&t.type==='in').reduce((s,t)=>s+t.amount,0);}
+function isTransfer(t){return t.type==='transferIn'||t.type==='transferOut';}
 
 function allMonthKeys(){
   const set=new Set([curMonthKey()]);
@@ -806,7 +807,7 @@ function renderTx(){
       <div class="item" onclick="openTxForm(state.transactions.find(x=>x.id==='${t.id}'))">
         <div class="ic" style="background:${bg}">${ic}</div>
         <div class="mid">
-          <div class="t1">${t.note?esc(t.note):(t.type==='in'?'درآمد':(cat?cat.label:'خرج'))}</div>
+          <div class="t1">${t.note?esc(t.note):(isTransfer(t)?'انتقال بین حساب‌ها':(t.type==='in'?'درآمد':(cat?cat.label:'خرج')))}</div>
           <div class="t2">${fmtDate(t.dateISO)} · ${a?esc(a.name):'—'}
             ${t.type==='out'&&cat?'<span class="badge" style="color:'+cat.color+';border-color:'+cat.color+'55">'+cat.label+'</span>':''}
             ${t.cat==='waste'&&t.reflect?'<span class="badge" style="color:#ef4444;border-color:#ef444455">🤔 پاسخ داری</span>':''}
@@ -945,7 +946,10 @@ function renderInvest(){
 function renderAccounts(){
   const foreign=[...new Set(state.accounts.map(a=>a.currency).filter(c=>c!=='تومان'))];
   let html=`
-  <button class="btn primary block" style="margin-bottom:14px" onclick="openAccountForm()">+ افزودن حساب / کارت</button>`;
+  <div class="row" style="margin-bottom:14px">
+    <button class="btn primary" style="flex:1" onclick="openAccountForm()">+ افزودن حساب / کارت</button>
+    <button class="btn" style="flex:1" onclick="openTransferForm()">⇄ انتقال بین حساب‌ها</button>
+  </div>`;
 
   if(state.accounts.length===0){
     html+=`<div class="empty"><span class="em">💳</span>هنوز حسابی نساخته‌ای.<br>کارت بانکی، پول نقد یا کیف پول ارزی اضافه کن.</div>`;
@@ -989,6 +993,30 @@ function renderAccounts(){
   }
 
   document.getElementById('accountsContent').innerHTML=html;
+}
+function openTransferForm(){
+  if(state.accounts.length<2){toast('برای انتقال، حداقل دو حساب بساز');return;}
+  const opts=state.accounts.map(a=>`<option value="${a.id}">${esc(a.name)} · ${a.currency}</option>`).join('');
+  openModal(`<button class="x" onclick="closeModal()">✕</button>
+    <h2>⇄ انتقال بین حساب‌ها</h2>
+    <div class="hint" style="margin-bottom:12px">این انتقال هزینه یا درآمد نیست و در گزارش‌ها حساب نمی‌شود.</div>
+    <div class="field"><label>از حساب</label><select class="input" id="trFrom">${opts}</select></div>
+    <div class="field"><label>به حساب</label><select class="input" id="trTo">${opts}</select></div>
+    <div class="field"><label>مبلغ انتقال</label><input class="input" id="trAmount" type="number" inputmode="decimal" min="0" placeholder="مثلاً ۱۰۰۰۰۰۰"></div>
+    <div class="field"><label>توضیح (اختیاری)</label><input class="input" id="trNote" class="input" placeholder="مثلاً انتقال به کارت خرید"></div>
+    <div class="field"><label>تاریخ</label><input class="input" id="trDate" type="date" value="${todayISO}"></div>
+    <button class="btn primary block" onclick="saveTransfer()">ثبت انتقال</button>`);
+}
+function saveTransfer(){
+  const from=document.getElementById('trFrom').value, to=document.getElementById('trTo').value;
+  const amount=parseFloat(document.getElementById('trAmount').value);
+  if(from===to){toast('حساب مبدأ و مقصد باید متفاوت باشند');return;}
+  if(!amount||amount<=0){toast('مبلغ معتبر وارد کن');return;}
+  const dateISO=document.getElementById('trDate').value||new Date().toISOString().slice(0,10), month=monthOfISO(dateISO), pair=uid();
+  const note=document.getElementById('trNote').value.trim();
+  state.transactions.push({id:uid(),pair,amount,accountId:from,note,dateISO,month,type:'transferOut',cat:null});
+  state.transactions.push({id:uid(),pair,amount,accountId:to,note:note||'انتقال بین حساب‌ها',dateISO,month,type:'transferIn',cat:null});
+  save();closeModal();render();toast('انتقال با موفقیت ثبت شد ✓');
 }
 function saveRateFrom(cur){
   const v=parseFloat(document.getElementById('rate_'+cur).value);
@@ -1233,8 +1261,20 @@ if(typeof google!=='undefined'){
 
 /* service worker (PWA) */
 if('serviceWorker' in navigator && store.persisted){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    reg.update();
+    reg.addEventListener('updatefound',()=>{
+      const w=reg.installing;
+      if(!w)return;
+      w.addEventListener('statechange',()=>{
+        if(w.state==='installed' && navigator.serviceWorker.controller){
+          toast('نسخه جدید برنامه آماده شد؛ در حال به‌روزرسانی…');
+          setTimeout(()=>location.reload(),1200);
+        }
+      });
+    });
+  }).catch(()=>{});
 }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f316569cb3fa1b',t:'MTc4NzQxNDM5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
