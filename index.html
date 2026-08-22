@@ -1079,7 +1079,7 @@ function requestAccessToken(cb){
     });
   }
   if(gToken&&gToken.exp>Date.now()+60000){done(true);return;}
-  tokenClient.requestAccessToken({prompt:''});
+  tokenClient.requestAccessToken({prompt:'none'});
 }
 
 function googleSignIn(){
@@ -1159,7 +1159,7 @@ function loadFromDrive(cb){
       }catch(e){}
       cb();
     });
-  }).catch(function(){toast('خطا در دریافت از درایو');cb();});
+  }).catch(function(e){toast('خطا در دریافت از درایو؛ دوباره مجوز را تأیید کن');cb();});
 }
 
 let syncTimer=null;
