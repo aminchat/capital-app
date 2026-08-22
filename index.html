@@ -339,7 +339,7 @@ function defaultState(){
   return {accounts:[],transactions:[],investments:[],budgets:{},rates:{}};
 }
 let state=(()=>{try{const s=store.get(KEY);if(s)return Object.assign(defaultState(),JSON.parse(s));}catch(e){}return defaultState();})();
-function save(){store.set(KEY,JSON.stringify(state));}
+function save(){store.set(KEY,JSON.stringify(state));scheduleSync();}
 
 /* ============================= DATA ============================= */
 const CATS=[
@@ -732,6 +732,8 @@ function renderHome(){
   const wasteThis=state.transactions.filter(t=>t.month===mk&&t.cat==='waste').reduce((x,t)=>x+t.amount,0);
   let html='';
 
+  html+=renderSyncCard();
+
   if(!hasBudget){
     html+=`<div class="banner warn">⏰ <span>بودجه ${monthLabel(mk)} هنوز ثبت نشده است.</span>
       <button class="btn sm primary" style="margin-right:auto" onclick="openBudgetForm(curMonthKey())">ثبت بودجه</button></div>`;
@@ -993,6 +995,175 @@ function saveRateFrom(cur){
   state.rates[cur]=v;save();render();toast('نرخ ذخیره شد ✓');
 }
 
+/* ============================= GOOGLE SYNC ============================= */
+const GOOGLE_CLIENT_ID='802769209005-v1jiuetctp8u8lr5su697fafdqhe80oc.apps.googleusercontent.com';
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILENAME='capital-app-data.json';
+let gUser=null;
+let gToken=null;
+let tokenClient=null;
+
+function decodeJWT(tok){
+  const b64=tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  const pad=b64+('==='.slice((b64.length+3)%4));
+  return JSON.parse(atob(pad));
+}
+function setSignedIn(u){gUser=u;store.set('g_user',JSON.stringify(u));store.set('g_signed','1');}
+function clearSignedIn(){gUser=null;gToken=null;store.set('g_user','');store.set('g_signed','0');}
+
+function handleCredential(resp){
+  try{
+    const p=decodeJWT(resp.credential);
+    setSignedIn({name:p.name,email:p.email,picture:p.picture||''});
+  }catch(e){}
+  requestAccessToken(function(ok){
+    if(!ok){toast('نتوانستم به درایو دسترسی بگیرم');render();return;}
+    loadFromDrive(function(){render();toast('ورود موفق ✓ همگام‌سازی فعال شد');});
+  });
+}
+
+function requestAccessToken(cb){
+  const done=function(ok){if(cb)cb(ok);};
+  if(typeof google==='undefined'||!google.accounts){done(false);return;}
+  if(!tokenClient){
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:GOOGLE_CLIENT_ID,
+      scope:DRIVE_SCOPE,
+      callback:function(resp){
+        if(resp&&resp.error){done(false);return;}
+        gToken={token:resp.access_token,exp:Date.now()+((resp.expires_in||3600)*1000)};
+        done(true);
+      }
+    });
+  }
+  if(gToken&&gToken.exp>Date.now()+60000){done(true);return;}
+  tokenClient.requestAccessToken({prompt:''});
+}
+
+function googleSignIn(){
+  if(typeof google==='undefined'||!google.accounts){toast('در حال بارگذاری گوگل…');return;}
+  if(!window._gbtn){
+    window._gbtn=document.createElement('div');
+    window._gbtn.style.display='none';
+    document.body.appendChild(window._gbtn);
+    google.accounts.id.renderButton(window._gbtn,{theme:'outline',size:'large',text:'signin_with'});
+  }
+  const b=window._gbtn.querySelector('div[role=button]');
+  if(b)b.click();
+}
+function googleSignOut(){
+  clearSignedIn();
+  if(typeof google!=='undefined'&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();
+  render();toast('از حساب خارج شدی');
+}
+
+function driveFetch(url,opts){
+  opts=opts||{};opts.headers=opts.headers||{};
+  opts.headers.Authorization='Bearer '+gToken.token;
+  return fetch(url,opts).then(function(r){
+    if(r.status===401){
+      return new Promise(function(res){
+        requestAccessToken(function(ok){
+          if(!ok){res(r);return;}
+          opts.headers.Authorization='Bearer '+gToken.token;
+          res(fetch(url,opts));
+        });
+      });
+    }
+    return r;
+  });
+}
+function driveFindFile(){
+  const q="name='"+DRIVE_FILENAME+"' and trashed=false";
+  return driveFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&spaces=drive&fields=files(id,name)')
+    .then(function(r){return r.json();}).then(function(d){return (d.files&&d.files[0])||null;});
+}
+function driveRead(id){return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media').then(function(r){return r.text();});}
+function driveCreate(content){
+  return driveFetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})})
+    .then(function(r){return r.json();}).then(function(d){return driveUpdate(d.id,content);});
+}
+function driveUpdate(id,content){
+  return driveFetch('https://www.googleapis.com/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body:content});
+}
+
+function hasLocalData(){
+  return state.accounts.length||state.transactions.length||state.investments.length||Object.keys(state.budgets).length;
+}
+function hasRemoteData(r){
+  return (r.accounts&&r.accounts.length)||(r.transactions&&r.transactions.length)||(r.investments&&r.investments.length)||Object.keys(r.budgets||{}).length;
+}
+
+function loadFromDrive(cb){
+  cb=cb||function(){};
+  if(!gToken){cb();return;}
+  driveFindFile().then(function(f){
+    if(!f){
+      driveCreate(JSON.stringify(state)).catch(function(){});
+      cb();return;
+    }
+    return driveRead(f.id).then(function(text){
+      try{
+        const remote=JSON.parse(text);
+        if(hasLocalData()&&!hasRemoteData(remote)){
+          driveUpdate(f.id,JSON.stringify(state)).catch(function(){});
+        }else{
+          state=Object.assign(defaultState(),remote);
+          save();
+        }
+      }catch(e){}
+      cb();
+    });
+  }).catch(function(){toast('خطا در دریافت از درایو');cb();});
+}
+
+let syncTimer=null;
+function scheduleSync(){
+  if(!gToken)return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(pushToDrive,1500);
+}
+function pushToDrive(){
+  if(!gToken)return;
+  const content=JSON.stringify(state);
+  driveFindFile().then(function(f){
+    if(f)return driveUpdate(f.id,content);
+    return driveCreate(content);
+  }).then(function(){/* synced */}).catch(function(){});
+}
+
+function renderSyncCard(){
+  if(gUser){
+    const avatar=gUser.picture
+      ? '<img src="'+esc(gUser.picture)+'" style="width:40px;height:40px;border-radius:50%" alt="">'
+      : '<div class="ic" style="background:rgba(61,139,253,.15)">👤</div>';
+    return '<div class="card">'
+      +'<div class="row" style="align-items:center">'+avatar
+      +'<div style="flex:1"><div class="t1" style="font-size:14px">'+esc(gUser.name)+'</div>'
+      +'<div class="t2">'+esc(gUser.email)+'</div></div>'
+      +'<span class="badge" style="color:var(--green);border-color:rgba(34,197,94,.4)">همگام‌سازی فعال ✓</span></div>'
+      +'<div class="row" style="margin-top:10px">'
+      +'<button class="btn sm primary" onclick="pushToDrive()">💾 ذخیره فوری</button>'
+      +'<button class="btn sm" onclick="loadFromDrive()">⬇️ دریافت از درایو</button>'
+      +'<button class="btn sm danger" onclick="googleSignOut()">خروج</button>'
+      +'</div></div>';
+  }
+  return '<div class="card"><h3>☁️ همگام‌سازی ابری</h3>'
+    +'<div class="small muted" style="margin-bottom:12px">با حساب گوگل وارد شو تا داده‌هایت خودکار در Google Drive ذخیره شود و از هر دستگاهی در دسترس باشد.</div>'
+    +'<button class="btn primary block" onclick="googleSignIn()">ورود با گوگل</button></div>';
+}
+
+function initGoogleOnLoad(){
+  if(typeof google==='undefined'||!google.accounts)return;
+  const u=store.get('g_user');
+  if(u){try{gUser=JSON.parse(u);}catch(e){}}
+  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleCredential});
+  if(store.get('g_signed')==='1'){
+    requestAccessToken(function(ok){if(ok)loadFromDrive(function(){render();});});
+  }
+  render();
+}
+
 /* ============================= NAV & CORE ============================= */
 const TABS=[{id:'home',lbl:'خانه',ic:'🏠'},{id:'tx',lbl:'تراکنش',ic:'💸'},{id:'report',lbl:'گزارش',ic:'📊'},{id:'invest',lbl:'سرمایه',ic:'📈'},{id:'accounts',lbl:'حساب‌ها',ic:'💳'}];
 let curTab='home';
@@ -1034,6 +1205,7 @@ window.openAccountForm=openAccountForm;window.saveAccount=saveAccount;window.del
 window.openInvestForm=openInvestForm;window.saveInvest=saveInvest;window.delInvest=delInvest;window.editInvestPrice=editInvestPrice;window.savePrice=savePrice;
 window.saveBudget=saveBudget;window.openRateEdit=openRateEdit;window.saveRate=saveRate;window.saveRateFrom=saveRateFrom;
 window.txShift=txShift;window.repShift=repShift;
+window.googleSignIn=googleSignIn;window.googleSignOut=googleSignOut;window.pushToDrive=pushToDrive;window.loadFromDrive=loadFromDrive;
 
 /* fab */
 document.getElementById('fab').onclick=()=>openTxForm();
@@ -1048,9 +1220,24 @@ document.getElementById('fab').onclick=()=>openTxForm();
 buildNav();
 render();
 
+/* google auth bootstrap */
+if(typeof google!=='undefined'){
+  initGoogleOnLoad();
+}else{
+  let _gt=setInterval(function(){
+    if(typeof google!=='undefined'){clearInterval(_gt);initGoogleOnLoad();}
+  },250);
+  setTimeout(function(){clearInterval(_gt);},12000);
+}
+
 /* service worker (PWA) */
 if('serviceWorker' in navigator && store.persisted){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f2d94dce83e830',t:'MTc4NzQxMTg5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+egister('sw.js').catch(()=>{});
 }
 </script>
 </body>
