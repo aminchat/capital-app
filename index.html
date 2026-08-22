@@ -1200,9 +1200,8 @@ function initGoogleOnLoad(){
   const u=store.get('g_user');
   if(u){try{gUser=JSON.parse(u);}catch(e){}}
   google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleCredential});
-  if(store.get('g_signed')==='1'){
-    requestAccessToken(function(ok){if(ok)loadFromDrive(function(){render();});});
-  }
+  // گرفتن توکن در زمان بازشدن صفحه ممکن است هر بار پنجره گوگل را باز کند؛
+  // توکن فقط با اقدام کاربر (ورود یا ذخیره فوری) درخواست می‌شود.
   render();
 }
 
@@ -1289,5 +1288,5 @@ if('serviceWorker' in navigator && store.persisted){
   }).catch(()=>{});
 }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2f33f21d827356a',t:'MTc4NzQxNjA2NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
