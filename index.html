@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0f17">
+<title>دیده‌بان بازار — فیلترهای پیشرفته</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header id="topbar">
+  <button id="btnFilters" class="chip" title="فیلترها">☰ فیلترها</button>
+  <div class="brand">📊 دیده‌بان بازار <span class="sub">فیلترهای پیشرفته</span></div>
+  <div class="grow"></div>
+  <span id="count" class="chip count">—</span>
+  <span id="status" class="chip status" title="">● اتصال…</span>
+  <select id="interval" class="chip" title="فاصله‌ی به‌روزرسانی">
+    <option value="15">۱۵ ثانیه</option>
+    <option value="30" selected>۳۰ ثانیه</option>
+    <option value="60">۱ دقیقه</option>
+    <option value="0">خاموش</option>
+  </select>
+  <button id="btnRefresh" class="chip" title="به‌روزرسانی دستی">↻</button>
+  <button id="btnTheme" class="chip" title="تم روشن/تیره">☀️</button>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main>
+  <aside id="drawer">
+    <div class="drawer-head">
+      <b>فیلترها</b>
+      <button id="btnCloseDrawer" class="chip">✕</button>
+    </div>
+    <div id="filterList"></div>
+    <div class="drawer-foot">
+      <button id="btnResetFilters" class="btn danger">بازنشانی همه</button>
+    </div>
+  </aside>
+
+  <section id="tableWrap">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th data-k="l18">نماد</th>
+          <th data-k="l30" class="hide-sm">نام</th>
+          <th data-k="cs" class="hide-sm">گروه</th>
+          <th data-k="pl">آخرین</th>
+          <th data-k="plp">٪آخرین</th>
+          <th data-k="pc">پایانی</th>
+          <th data-k="pcp">٪پایانی</th>
+          <th data-k="tvol">حجم</th>
+          <th data-k="tval">ارزش</th>
+          <th data-k="tno" class="hide-sm">تعداد</th>
+          <th data-k="pe" class="hide-sm">P/E</th>
+          <th data-k="pd1" class="hide-md">خرید</th>
+          <th data-k="po1" class="hide-md">فروش</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty" class="empty">در حال دریافت داده‌ها از TSETMC…</div>
+  </section>
+</main>
+
+<noscript>این برنامه به جاوااسکریپت نیاز دارد.</noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
