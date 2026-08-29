@@ -20,29 +20,72 @@ const PROXIES = [
   {
     id: "corsproxy",
     label: "پروکسی corsproxy.io",
+    abs: true,
     wrap: (url) => "https://corsproxy.io/?url=" + encodeURIComponent(url),
   },
   {
     id: "allorigins",
     label: "پروکسی allorigins",
+    abs: true,
     wrap: (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
   },
   {
     id: "codetabs",
     label: "پروکسی codetabs",
+    abs: true,
     wrap: (url) => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url),
   },
 ];
 
 const STRATEGY_TIMEOUT = 15000;
+const CUSTOM_PROXY_KEY = "mwa.custom-proxy.v1";
+
+/* پروکسی‌ها فقط با آدرسِ کاملِ مطلق کار می‌کنند؛ اگر مسیر نسبی مثل
+ * «MarketWatchInit.aspx» را مستقیم بدهیم، پروکسی همان مسیر نسبی را می‌گیرد
+ * و همه‌چیز خراب می‌شود (خطای شناخته‌شده‌ی CORS). */
+export function absoluteUrl(path) {
+  return /^https?:\/\//i.test(path) ? path : DIRECT_BASES[0] + path;
+}
+
+let customProxyUrl = ""; // fallback حافظه‌ای (برای تست و مرورگرهایی که localStorage ندارند)
+
+export function getCustomProxy() {
+  if (customProxyUrl) return customProxyUrl;
+  try { return (localStorage.getItem(CUSTOM_PROXY_KEY) || "").trim(); } catch (e) { return ""; }
+}
+
+/* تنظیم/حذف پروکسی سفارشی (مثلاً Cloudflare Worker رایگان) —
+ * درخواست به شکل <base>?url=<آدرس کامل TSETMC> ساخته می‌شود. */
+export function setCustomProxy(url) {
+  const v = String(url || "").trim();
+  customProxyUrl = v;
+  try {
+    if (v) localStorage.setItem(CUSTOM_PROXY_KEY, v);
+    else localStorage.removeItem(CUSTOM_PROXY_KEY);
+  } catch (e) {}
+  return v;
+}
+
+function customStrategy() {
+  const base = getCustomProxy();
+  if (!base) return null;
+  return {
+    id: "custom",
+    label: "پروکسی سفارشی",
+    abs: true,
+    wrap: (url) => (base.includes("?") ? base + "&" : base + "?") + "url=" + encodeURIComponent(url),
+  };
+}
 
 export function allStrategies() {
   const list = [];
   for (const b of DIRECT_BASES) {
     list.push({ id: "direct:" + b, label: "مستقیم " + b.replace("https://", "").split("/")[0], wrap: (p) => b + p });
   }
+  const custom = customStrategy();
+  if (custom) list.push(custom);
   for (const p of PROXIES) {
-    list.push({ id: p.id, label: p.label, wrap: (p.wrap) });
+    list.push({ id: p.id, label: p.label, abs: p.abs, wrap: p.wrap });
   }
   return list;
 }
@@ -176,7 +219,8 @@ export class MarketFeed {
   }
 
   async tryFetch(path, strategy) {
-    const url = strategy.wrap(path);
+    // پروکسی‌ها آدرسِ مطلق می‌گیرند؛ مستقیم‌ها خودشان base دارند.
+    const url = strategy.abs ? strategy.wrap(absoluteUrl(path)) : strategy.wrap(path);
     const text = await fetchWithTimeout(url, STRATEGY_TIMEOUT);
     if (!text || text.length < 10) throw new Error("empty");
     return text;

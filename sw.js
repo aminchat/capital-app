@@ -1,5 +1,5 @@
 /* سرویس‌ورکر مینیمال: پوسته‌ی اپ کش می‌شود؛ داده‌های بازار هرگز کش نمی‌شوند. */
-const CACHE = "mwa-v1";
+const CACHE = "mwa-v2";
 const SHELL = ["./", "index.html", "css/app.css", "js/app.js", "js/data.js", "js/filters.js", "js/sectors.js", "js/util.js", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

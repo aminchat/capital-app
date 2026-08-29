@@ -3,7 +3,7 @@
  *  ۲) فیلترها (ویژه + پایه) — همان سناریوهای نسخه‌ی قدیمی
  *  ۳) قالب‌بندی اعداد
  */
-import { applyInstrumentRows, applyBestLimits, parseClientType, MarketFeed } from "../js/data.js";
+import { applyInstrumentRows, applyBestLimits, parseClientType, MarketFeed, allStrategies, absoluteUrl, setCustomProxy } from "../js/data.js";
 import { SPECIALS, BASICS, applyFilters, filterById } from "../js/filters.js";
 import { withCommas, compact, pct, cls } from "../js/util.js";
 import { sectorName } from "../js/sectors.js";
@@ -123,6 +123,33 @@ check("pct با علامت", pct("3.26") === "+3.26" && pct("-1.2") === "-1.20")
 check("cls رنگ", cls("1.5") === "pos" && cls("-2") === "neg" && cls("0") === "");
 check("sectorName(27)=فلزات اساسي", sectorName("27") === "فلزات اساسي", sectorName("27"));
 check("۶۹ گروه", Object.keys((await import("../js/sectors.js")).SECTORS).length === 69);
+
+console.log("\n=== ۸) استراتژی‌های دریافت (رفع CORS) ===");
+const ABS_URL = "https://old.tsetmc.com/tsev2/data/MarketWatchInit.aspx";
+const ENC_URL = encodeURIComponent(ABS_URL);
+check("absoluteUrl مسیر نسبی را مطلق می‌کند", absoluteUrl("MarketWatchInit.aspx") === ABS_URL, absoluteUrl("MarketWatchInit.aspx"));
+check("absoluteUrl آدرس مطلق را دست‌نخورده می‌گذارد", absoluteUrl(ABS_URL) === ABS_URL);
+const stg = allStrategies();
+check("استراتژی‌های پیش‌فرض: ۲ مستقیم + ۳ پروکسی", stg.length === 5, String(stg.length));
+const PROXY_PREFIX = {
+  corsproxy: "https://corsproxy.io/?url=",
+  allorigins: "https://api.allorigins.win/raw?url=",
+  codetabs: "https://api.codetabs.com/v1/proxy?quest=",
+};
+for (const id of Object.keys(PROXY_PREFIX)) {
+  const s = stg.find((x) => x.id === id);
+  const u = s ? s.wrap(absoluteUrl("MarketWatchInit.aspx")) : "";
+  check("پروکسی " + id + " آدرسِ کاملِ مطلق می‌گیرد", !!s && u.startsWith(PROXY_PREFIX[id]) && u.endsWith(ENC_URL), u);
+}
+const directOld = stg.find((x) => x.id === "direct:https://old.tsetmc.com/tsev2/data/");
+check("مستقیم با base خودش ساخته می‌شود", !!directOld && directOld.wrap("MarketWatchInit.aspx") === ABS_URL);
+setCustomProxy("https://demo.workers.dev/");
+const withCustom = allStrategies();
+const custom = withCustom.find((x) => x.id === "custom");
+check("پروکسی سفارشی به فهرست اضافه می‌شود", !!custom, JSON.stringify(withCustom.map((x) => x.id)));
+check("پروکسی سفارشی آدرس کامل می‌گیرد", !!custom && custom.wrap(absoluteUrl("MarketWatchInit.aspx")) === "https://demo.workers.dev/?url=" + ENC_URL);
+setCustomProxy("");
+check("حذف پروکسی سفارشی", allStrategies().every((x) => x.id !== "custom"));
 
 console.log("\n================== نتیجه: " + passed + " موفق / " + failed + " ناموفق ==================");
 process.exit(failed > 0 ? 1 : 0);
