@@ -37,7 +37,7 @@ node test/run-tests.mjs   # 47/47 — پارسر فید + فیلترها + قا�
 این اپ باید به‌صورت **زیرپوشه‌ی `market-app/` در همان شاخه** اضافه شود تا لینک زیر فعال شود،
 بدون اینکه کوچک‌ترین تغییری در اپ مدیریت سرمایه ایجاد شود:
 
-**https://aminchat.github.io/amin/market-app/**
+**https://aminchat.github.io/capital-app/**
 
 برای افزودن (از یک کلون محلی):
 
