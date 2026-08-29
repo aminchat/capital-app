@@ -7,7 +7,8 @@
   `ClientTypeAll.aspx` (تفکیک حقیقی/حقوقی برای فیلترهای پول هوشمند).
 - فرمت فید و همه‌ی محاسبات مشتق (درصد تغییر، P/E و…) دقیقاً از موتور خود صفحه‌ی دیده‌بان سایت برداشت شده است.
 - اگر مرورگر اجازه‌ی دریافت مستقیم ندهد (CORS)، به‌ترتیب پروکسی‌های CORS عمومی
-  (corsproxy.io → allorigins → codetabs) امتحان می‌شوند و روش سالم در مرورگر ذخیره می‌شود.
+  (corsproxy.io → allorigins → codetabs → پروکسی سفارشی) امتحان می‌شوند و روش سالم در مرورگر ذخیره می‌شود.
+- پروکسی‌ها همیشه آدرسِ **کاملِ مطلق** TSETMC می‌گیرند (می‌توانید در `test/run-tests.mjs` ببینید).
 
 ## فیلترها
 
@@ -20,7 +21,6 @@
 ## اجرای محلی
 
 ```bash
-cd market-app
 python3 -m http.server 8080
 # http://localhost:8080
 ```
@@ -28,29 +28,47 @@ python3 -m http.server 8080
 ## تست‌ها
 
 ```bash
-node test/run-tests.mjs   # 47/47 — پارسر فید + فیلترها + قالب‌بندی
+node test/run-tests.mjs   # 57/57 — پارسر فید + فیلترها + قالب‌بندی + استراتژی‌های دریافت
 ```
 
-## انتشار روی GitHub Pages (کنار اپ مدیریت سرمایه)
+## انتشار روی GitHub Pages
 
-گیت‌هاب‌پیجز این مخزن از شاخه‌ی `arena/01a019e4-amin` سرو می‌کند و اپ «مدیریت سرمایه» در ریشه‌ی آن است.
-این اپ باید به‌صورت **زیرپوشه‌ی `market-app/` در همان شاخه** اضافه شود تا لینک زیر فعال شود،
-بدون اینکه کوچک‌ترین تغییری در اپ مدیریت سرمایه ایجاد شود:
+این اپ در **ریشه‌ی** مخزن `aminchat/capital-app` قرار دارد و از شاخه‌ی `main`
+روی لینک زیر منتشر می‌شود:
 
 **https://aminchat.github.io/capital-app/**
 
-برای افزودن (از یک کلون محلی):
+## پروکسی سفارشی (Cloudflare Worker رایگان)
 
-```bash
-git fetch origin
-git checkout arena/01a019e4-amin
-git checkout origin/arena/01a04e69-amin -- market-app
-git commit -m "افزودن اپ دیده‌بان بازار (market-app)"
-git push origin arena/01a019e4-amin
+اگر هم `old.tsetmc.com` مستقیم بسته باشد و هم پروکسی‌های عمومی جواب ندهند،
+یک Worker رایگان بسازید:
+
+1. در [Cloudflare](https://dash.cloudflare.com) → **Workers & Pages → Create → Worker**.
+2. کد زیر را جایگزین کد پیش‌فرض کنید و **Deploy** بزنید:
+
+```js
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const target = url.searchParams.get("url");
+    if (!target) return new Response("missing url param", { status: 400 });
+    const res = await fetch(target, { cf: { cacheTtl: 0 } });
+    return new Response(await res.arrayBuffer(), {
+      status: res.status,
+      headers: {
+        "content-type": res.headers.get("content-type") || "text/plain; charset=utf-8",
+        "access-control-allow-origin": "*",
+        "cache-control": "no-store",
+      },
+    });
+  },
+};
 ```
 
-یا بدون گیت: در مرورگر، شاخه‌ی `arena/01a019e4-amin` را باز کنید، `Add file → Upload files`،
-پوشه‌ی `market-app` را بسازید و فایل‌ها را داخلش بریزید.
+3. آدرس Worker (مثلاً `https://my-proxy.workers.dev`) را در اپ تنظیم کنید:
+   وقتی پیام خطای دریافت داده ظاهر شد، دکمه‌ی **«تنظیم پروکسی سفارشی»** را بزنید و آدرس را وارد کنید.
+
+اپ درخواست‌ها را به شکل `worker/?url=<آدرس کامل TSETMC>` می‌فرستد؛ برای حذف، آدرس را خالی بگذارید.
 
 ## ساختار
 

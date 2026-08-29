@@ -1,7 +1,7 @@
 /* اپ دیده‌بان بازار — منطق رابط کاربری
  * داده‌ها مستقیم از TSETMC؛ فیلترها روی نسخه‌ی محلی اعمال می‌شوند. */
 
-import { MarketFeed } from "./data.js";
+import { MarketFeed, getCustomProxy, setCustomProxy } from "./data.js";
 import { SPECIALS, BASICS, applyFilters, filterById } from "./filters.js";
 import { sectorName } from "./sectors.js";
 import { withCommas, compact, num2, pct, cls } from "./util.js";
@@ -60,9 +60,16 @@ const feed = new MarketFeed({
       const lines = (ev.errors || []).map((e) => "• " + e.strategy.label + " → " + e.error).join("\n");
       showBanner(
         "دریافت داده از TSETMC نشد. راه‌های امتحان‌شده:\n" + lines +
-        "\nاگر اینترنتقطع/فیلتر است، پروکسی‌ها را عوض کنید یا دکمه‌ی زیر را بزنید." +
-        '<br><button class="btn" id="btnDemo" style="margin-top:8px">نمایش داده‌ی نمونه</button>'
+        "\nاگر هیچ‌کدام جواب نداد، یک پروکسی سفارشی (Cloudflare Worker) بسازید و آدرسش را اینجا وارد کنید." +
+        '<br><button class="btn" id="btnProxy" style="margin-top:8px">تنظیم پروکسی سفارشی</button>' +
+        '<button class="btn" id="btnDemo" style="margin-top:8px">نمایش داده‌ی نمونه</button>'
       );
+      $("#btnProxy").addEventListener("click", () => {
+        const u = prompt("آدرس پروکسی سفارشی (مثلاً https://my-proxy.workers.dev/)\nبرای حذف، خالی بگذارید:", getCustomProxy());
+        if (u === null) return;
+        setCustomProxy(u);
+        location.reload();
+      });
       $("#btnDemo").addEventListener("click", () => { loadDemo(); hideBanner(); });
     }
   },
