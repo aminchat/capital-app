@@ -1,5 +1,3 @@
-Diff
-
 /*! دیده‌بان بازار — نسخه‌ی تزریقی (اجرا در صفحه‌ی خود tsetmc؛ هم‌مبدأ، بدون CORS/پروکسی)
  * ساخته‌شده با inject/build.js — فایل دستی ویرایش نشود */
 (function(){
@@ -337,6 +335,7 @@ class MarketFeed {
       try {
         return await this.tryFetch(path, this.strategy);
       } catch (e) {
+        try { console.warn("[MWA] feed failed via '" + this.strategy.id + "':", e && e.message ? e.message : e); } catch (e2) {}
         this.strategy = null;
       }
     }
@@ -584,6 +583,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
  */
 (function () {
   if (typeof window === "undefined" || typeof document === "undefined") return;
+  window.__mwaVer = "1.2.2";
   if (window.__mwaInjected) {
     var r = document.getElementById("mwaRoot");
     if (r) r.style.display = r.style.display === "none" ? "flex" : "none";
@@ -922,7 +922,9 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
 
     var top = h("div");
     top.id = "mwaTop";
-    var brand = h("span", "brand", "📊 دیده‌بان بازار — فیلترهای پیشرفته");
+    var brand = h("span", "brand", "📊 دیده‌بان بازار");
+    var ver = h("span", "chip", "v1.2.2");
+    ver.title = "نسخه‌ی باندل";
     var grow = h("span", "grow");
     countEl = h("span", "chip", "—");
     statusEl = h("span", "chip");
@@ -950,7 +952,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     var bX = h("button", "chip", "✕");
     bX.title = "بستن (برای باز شدن دوباره، همان کد را دوباره اجرا کنید)";
     bX.addEventListener("click", close);
-    top.appendChild(brand); top.appendChild(grow); top.appendChild(countEl);
+    top.appendChild(brand); top.appendChild(ver); top.appendChild(grow); top.appendChild(countEl);
     top.appendChild(statusEl); top.appendChild(sel); top.appendChild(bR); top.appendChild(bF); top.appendChild(bX);
 
     var main = h("div");
