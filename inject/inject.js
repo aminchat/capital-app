@@ -225,10 +225,11 @@ function applyInstrumentRows(store, text) {
   return parts;
 }
 
-function applyBestLimits(store, text) {
+function applyBestLimits(store, text, section) {
   const all = String(text).split("@");
-  if (all.length < 4) return;
-  const rows = all[3].split(";");
+  const sec = section === 1 ? 1 : 3; // Plus: بخش ۱ | Init: بخش ۳ (مثل موتور سایت)
+  if (all.length <= sec) return;
+  const rows = all[sec].split(";");
   for (let i = 0; i < rows.length; i++) {
     const col = rows[i].split(",");
     if (col.length < 8) continue;
@@ -274,6 +275,7 @@ class MarketFeed {
     this.strategy = null;
     this.rows = {};
     this.ct = {};
+    this.heven = 0;
   }
 
   async tryFetch(path, strategy) {
@@ -333,6 +335,7 @@ class MarketFeed {
       try {
         return await this.tryFetch(path, this.strategy);
       } catch (e) {
+        try { console.warn("[MWA] feed failed via '" + this.strategy.id + "':", e && e.message ? e.message : e); } catch (e2) {}
         this.strategy = null;
       }
     }
@@ -340,9 +343,16 @@ class MarketFeed {
   }
 
   async loadMarket() {
-    const text = await this.fetchFeed("MarketWatchInit.aspx");
-    applyInstrumentRows(this.rows, text);
-    applyBestLimits(this.rows, text);
+    // دقیقاً مثل موتور خود سایت: بار اول Init با h=0&r=0؛ بعدش Plus با هِوِنِ ذخیره‌شده
+    // (سرور بدون این پارامترها جواب درست نمی‌دهد)
+    const isPlus = this.heven > 0;
+    const path = isPlus
+      ? "MarketWatchPlus.aspx?h=" + (5 * Math.floor(this.heven / 5)) + "&r=0"
+      : "MarketWatchInit.aspx?h=0&r=0";
+    const text = await this.fetchFeed(path);
+    const parts = applyInstrumentRows(this.rows, text);
+    if (parts.heven > this.heven) this.heven = parts.heven;
+    applyBestLimits(this.rows, text, isPlus ? 1 : 3);
     return this.rows;
   }
 
@@ -573,6 +583,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
  */
 (function () {
   if (typeof window === "undefined" || typeof document === "undefined") return;
+  window.__mwaVer = "1.2.2";
   if (window.__mwaInjected) {
     var r = document.getElementById("mwaRoot");
     if (r) r.style.display = r.style.display === "none" ? "flex" : "none";
@@ -911,7 +922,9 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
 
     var top = h("div");
     top.id = "mwaTop";
-    var brand = h("span", "brand", "📊 دیده‌بان بازار — فیلترهای پیشرفته");
+    var brand = h("span", "brand", "📊 دیده‌بان بازار");
+    var ver = h("span", "chip", "v1.2.2");
+    ver.title = "نسخه‌ی باندل";
     var grow = h("span", "grow");
     countEl = h("span", "chip", "—");
     statusEl = h("span", "chip");
@@ -939,7 +952,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     var bX = h("button", "chip", "✕");
     bX.title = "بستن (برای باز شدن دوباره، همان کد را دوباره اجرا کنید)";
     bX.addEventListener("click", close);
-    top.appendChild(brand); top.appendChild(grow); top.appendChild(countEl);
+    top.appendChild(brand); top.appendChild(ver); top.appendChild(grow); top.appendChild(countEl);
     top.appendChild(statusEl); top.appendChild(sel); top.appendChild(bR); top.appendChild(bF); top.appendChild(bX);
 
     var main = h("div");
