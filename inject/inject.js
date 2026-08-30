@@ -1,3 +1,5 @@
+Diff
+
 /*! دیده‌بان بازار — نسخه‌ی تزریقی (اجرا در صفحه‌ی خود tsetmc؛ هم‌مبدأ، بدون CORS/پروکسی)
  * ساخته‌شده با inject/build.js — فایل دستی ویرایش نشود */
 (function(){
@@ -583,7 +585,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
  */
 (function () {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  window.__mwaVer = "1.2.3";
+  window.__mwaVer = "1.3.0";
   if (window.__mwaInjected) {
     var r = document.getElementById("mwaRoot");
     if (r) r.style.display = r.style.display === "none" ? "flex" : "none";
@@ -655,6 +657,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     "#mwaDrawer{width:308px;flex:0 0 auto;background:#111826;border-inline-start:1px solid rgba(255,255,255,.09);",
     "display:flex;flex-direction:column;min-height:0}",
     "#mwaDrawer.closed{display:none}",
+    "#mwaBackdrop{display:none}",
     "#mwaRoot .dhead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;",
     "border-bottom:1px solid rgba(255,255,255,.09);font-size:13px}",
     "#mwaRoot .dfoot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.09)}",
@@ -700,7 +703,20 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     "#mwaRoot td.pos{color:#4ade80}#mwaRoot td.neg{color:#f87171}",
     "#mwaRoot a.sym-l{color:#60a5fa;text-decoration:none}",
     "#mwaEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:14px}",
-    "@media (max-width:900px){#mwaRoot .hm{display:none}#mwaDrawer{position:fixed;inset-inline-start:0;top:0;bottom:0;z-index:5}}",
+    "@media (max-width:900px){",
+    "#mwaRoot .hm{display:none}",
+    "#mwaDrawer{position:fixed;inset-inline-start:0;top:0;bottom:0;z-index:6;width:min(320px,85vw);box-shadow:8px 0 30px rgba(0,0,0,.5)}",
+    "#mwaRoot.dw #mwaBackdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5}",
+    "#mwaTop{padding:8px 10px;gap:6px}",
+    "#mwaRoot .chip{padding:6px 12px}",
+    "#mwaRoot thead th{padding:9px 8px}",
+    "#mwaRoot tbody td{padding:9px 8px}",
+    "}",
+    "@media (max-width:600px){",
+    "#mwaRoot .hm2{display:none}",
+    "#mwaRoot table{min-width:640px}",
+    "#mwaRoot .brand{font-size:13px}",
+    "}",
   ].join("");
 
   /* ---------- منبع داده (هم‌مبدأ) ---------- */
@@ -756,7 +772,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
   };
   var HIDE = { l30: "hm", cs: "hm", tno: "hm", pe: "hm", pd1: "hm2", po1: "hm2" };
 
-  var tbody, emptyEl, countEl, statusEl;
+  var tbody, emptyEl, countEl, statusEl, addedViewport = null;
 
   function render() {
     var all = feed.rows || {};
@@ -913,10 +929,25 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
   }
 
   /* ---------- ساخت اورلی ---------- */
+  function setDrawer(open) {
+    state.drawer = open; save();
+    var d = document.getElementById("mwaDrawer");
+    if (d) d.classList.toggle("closed", !open);
+    var rt = document.getElementById("mwaRoot");
+    if (rt) rt.classList.toggle("dw", open);
+  }
+
   function build() {
     var st = document.createElement("style");
     st.textContent = CSS;
     document.head.appendChild(st);
+
+    if (!document.querySelector('meta[name="viewport"]')) {
+      addedViewport = document.createElement("meta");
+      addedViewport.name = "viewport";
+      addedViewport.content = "width=device-width, initial-scale=1";
+      document.head.appendChild(addedViewport);
+    }
 
     var root = h("div");
     root.id = "mwaRoot";
@@ -924,7 +955,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     var top = h("div");
     top.id = "mwaTop";
     var brand = h("span", "brand", "📊 دیده‌بان بازار");
-    var ver = h("span", "chip", "v1.2.3");
+    var ver = h("span", "chip", "v1.3.0");
     ver.title = "نسخه‌ی باندل";
     var grow = h("span", "grow");
     countEl = h("span", "chip", "—");
@@ -946,10 +977,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     bR.title = "به‌روزرسانی";
     bR.addEventListener("click", refresh);
     var bF = h("button", "chip", "☰ فیلترها");
-    bF.addEventListener("click", function () {
-      state.drawer = !state.drawer; save();
-      document.getElementById("mwaDrawer").classList.toggle("closed", !state.drawer);
-    });
+    bF.addEventListener("click", function () { setDrawer(!state.drawer); });
     var bX = h("button", "chip", "✕");
     bX.title = "بستن (برای باز شدن دوباره، همان کد را دوباره اجرا کنید)";
     bX.addEventListener("click", close);
@@ -959,16 +987,17 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     var main = h("div");
     main.id = "mwaMain";
 
+    var bk = h("div");
+    bk.id = "mwaBackdrop";
+    bk.addEventListener("click", function () { setDrawer(false); });
+
     var drawer = h("div");
     drawer.id = "mwaDrawer";
     drawer.classList.toggle("closed", !state.drawer);
     var dhead = h("div", "dhead");
     dhead.appendChild(h("b", null, "فیلترها"));
     var dclose = h("button", "chip", "✕");
-    dclose.addEventListener("click", function () {
-      state.drawer = false; save();
-      drawer.classList.add("closed");
-    });
+    dclose.addEventListener("click", function () { setDrawer(false); });
     dhead.appendChild(dclose);
     var flist = h("div");
     flist.id = "mwaFList";
@@ -1010,9 +1039,15 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     emptyEl.id = "mwaEmpty";
     wrap.appendChild(tbl); wrap.appendChild(emptyEl);
 
-    main.appendChild(drawer); main.appendChild(wrap);
+    main.appendChild(bk); main.appendChild(drawer); main.appendChild(wrap);
     root.appendChild(top); root.appendChild(main);
     document.body.appendChild(root);
+    root.classList.toggle("dw", state.drawer);
+    if (window.innerWidth <= 900 && state.drawer) {
+      state.drawer = false;
+      document.getElementById("mwaDrawer").classList.add("closed");
+      root.classList.remove("dw");
+    }
 
     markSorted();
     buildDrawer();
@@ -1028,6 +1063,8 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
   function close() {
     var r = document.getElementById("mwaRoot");
     if (r) r.remove();
+    if (addedViewport && addedViewport.parentNode) addedViewport.parentNode.removeChild(addedViewport);
+    addedViewport = null;
     if (timer) clearInterval(timer);
     window.__mwaInjected = 0;
   }
