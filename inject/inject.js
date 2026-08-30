@@ -583,7 +583,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
  */
 (function () {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  window.__mwaVer = "1.2.2";
+  window.__mwaVer = "1.2.3";
   if (window.__mwaInjected) {
     var r = document.getElementById("mwaRoot");
     if (r) r.style.display = r.style.display === "none" ? "flex" : "none";
@@ -782,7 +782,8 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
         else if (key === "l30") td.className = "name " + (HIDE.l30 || "");
         else if (key === "cs") td.className = "seccol " + (HIDE.cs || "");
         else if (HIDE[key]) td.className = HIDE[key];
-        if (c.c) td.classList.add(c.c(r));
+        var cl = c.c ? c.c(r) : "";
+        if (cl) td.classList.add(cl);
         tr.appendChild(td);
       }
       frag.appendChild(tr);
@@ -923,7 +924,7 @@ __g.__mwaCore = { MarketFeed: MarketFeed, applyInstrumentRows: applyInstrumentRo
     var top = h("div");
     top.id = "mwaTop";
     var brand = h("span", "brand", "📊 دیده‌بان بازار");
-    var ver = h("span", "chip", "v1.2.2");
+    var ver = h("span", "chip", "v1.2.3");
     ver.title = "نسخه‌ی باندل";
     var grow = h("span", "grow");
     countEl = h("span", "chip", "—");
