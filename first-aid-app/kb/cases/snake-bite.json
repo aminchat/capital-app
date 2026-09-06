@@ -1,0 +1,38 @@
+{
+  "id": "snake-bite",
+  "title": "نیش مار",
+  "icon": "🐍",
+  "category": "bite",
+  "version": 1,
+  "updatedAt": "2026-09-06",
+  "summary": "بی‌حرکتی اندام + خط تورم + انتقال سریع — مکیدن/بریدن/تنگ‌بند ممنوع",
+  "sources": ["WHO Guidelines for the Management of Snakebites, 2nd ed.", "WHO Snakebite envenoming strategy 2019"],
+  "nationalNote": "در ایران اکثر مارهای زهرآگین وایپر (هموتوکسیک) هستند. پروتکل ملی هلال احمر درباره‌ی محل سرم و انتقال را رعایت کنید — با کمیته‌ی پزشکی هماهنگ شود.",
+  "match": { "saw_snake": 6, "two_punctures": 3, "local_pain": 1, "local_swelling": 2 },
+  "riskQuestions": ["swelling_spreading", "bruising", "bleeding_gums", "ptosis", "difficulty_breathing", "muscle_tremor", "dizziness", "nausea_vomiting", "fainting"],
+  "call115": {
+    "always": false,
+    "when": ["swelling_spreading", "bruising", "bleeding_gums", "ptosis", "difficulty_breathing", "muscle_tremor", "dizziness", "nausea_vomiting", "fainting"],
+    "text": "هر علامت سیستمیک زهر = ۱۱۵ فوری؛ حتی بدون علامت، انتقال به مرکز دارای سرم الزامی است"
+  },
+  "actions": [
+    "از مار فاصله بگیرید و مصدوم را آرام کنید — اضطراب و حرکت، جذب زهر را سریع‌تر می‌کند.",
+    "انگشتی، ساعت و هر نوار تنگی از اندام نیش‌خورده درآورید (تورم می‌آید).",
+    "اندام نیش‌خورده را بی‌حرکت کنید (اسپلینت) و در سطح مساوی یا پایین‌تر از قلب نگه دارید.",
+    "مرز تورم را با خودکار علامت بزنید و زمان را بنویسید — پزشک سرعت پخش زهر را از همین خط می‌فهمد.",
+    "بلافاصله و بدون اینکه مصدوم راه برود، به نزدیک‌ترین بیمارستانی که سرم ضد زهر مار دارد منتقل کنید.",
+    "اگر شکل مار را به‌صورت ایمن به یاد دارید، به کادر درمان بگویید (مار را نکشید و پرتاب نکنید).",
+    "حتی اگر مصدوم «فقط درد موضعی» دارد: مراقبت پزشکی الزامی است — زهر می‌تواند ساعت‌ها بعد اوج بگیرد."
+  ],
+  "redFlags": [
+    { "when": ["swelling_spreading", "bruising", "bleeding_gums", "ptosis", "difficulty_breathing", "muscle_tremor", "dizziness", "nausea_vomiting", "fainting"], "text": "نیش‌گِزی سیستمیک — هر دقیقه اهمیت دارد، ۱۱۵ فوری" }
+  ],
+  "prohibitions": [
+    "زهر را با دهان یا هر دستگاهی نکشید",
+    "زخم را ببرید یا سوراخ نکنید",
+    "تنگ‌بند یا هر نوار تنگی نیندازید",
+    "یخ مستقیم روی زخم نگذارید",
+    "الکل، آسپرین یا قهوه ندهید",
+    "مار را دست نزنید و برای گرفتن/عکس گرفتن ریسک نکنید"
+  ]
+}

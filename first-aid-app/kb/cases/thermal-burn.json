@@ -1,0 +1,34 @@
+{
+  "id": "thermal-burn",
+  "title": "سوختگی حرارتی",
+  "icon": "🔥",
+  "category": "burn",
+  "version": 1,
+  "updatedAt": "2026-09-06",
+  "summary": "آب خنک جاری ۲۰ دقیقه — یخ/خمیردندان/روغن ممنوع",
+  "sources": ["IFRC/Red Cross burn first-aid guidelines", "WHO burns fact sheet"],
+  "match": { "burn_large": 2, "burn_deep": 3, "burn_face_hands_feet": 3, "stuck_clothing": 1, "soot_nose": 2, "local_pain": 1 },
+  "riskQuestions": ["burn_face_hands_feet", "burn_large", "burn_deep", "soot_nose", "stuck_clothing", "child_victim"],
+  "call115": {
+    "always": false,
+    "when": ["burn_face_hands_feet", "burn_large", "burn_deep", "soot_nose", "child_victim"],
+    "text": "سوختگی گسترده/عمیق/حساس یا در کودک = ۱۱۵ فوری"
+  },
+  "actions": [
+    "مصدوم را از منبع سوختگی دور کنید و آتش را خاموش کنید.",
+    "سوختگی را ۲۰ دقیقه با آب خنک جاری (شیرآب معمولی کافی است) خنک کنید.",
+    "حلقه، ساعت و لباس دور سوختگی را درآورید؛ لباسی که چسبیده را «ببرید»، نکشید.",
+    "با پارچه تمیز بدون پرز (یا نایلون غذاساز) آروم بپوشانید تا آلوده نشود.",
+    "به مصدوم هوشیار، مایعات خوراکی (ORS) به‌اندازه و تکراری بدهید.",
+    "سوختگی‌های خفیف هم بهتر است تحت نظر یک مددگر درمانی قرار بگیرند."
+  ],
+  "redFlags": [
+    { "when": ["burn_face_hands_feet", "burn_large", "burn_deep", "soot_nose", "child_victim"], "text": "سوختگی جدی (حساس/بزرگ/عمیق/کودک/استنشاق دود) — ۱۱۵ فوری" }
+  ],
+  "prohibitions": [
+    "یخ نذارید (آسیب بافتی را بدتر می‌کند)",
+    "خمیردندان، روغن، کره، کرم یا هر درمان خانگی نریزید",
+    "تورم‌های آب‌دار (بلستر) را نترکانید",
+    "لباس چسبیده را نکشید — ببرید"
+  ]
+}
